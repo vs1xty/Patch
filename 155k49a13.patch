@@ -1,0 +1,101 @@
+diff -crB a/fs/dcache.c b/fs/dcache.c
+*** a/fs/dcache.c	2025-12-11 18:54:57.423628045 +0000
+--- b/fs/dcache.c	2025-12-11 18:49:50.086581919 +0000
+***************
+*** 2245,2250 ****
+--- 2245,2255 ----
+  			continue;
+  		if (dentry_cmp(dentry, str, hashlen_len(hashlen)) != 0)
+  			continue;
++ #ifdef CONFIG_KSU_SUSFS_SUS_PATH
++ 			if (dentry->d_inode && unlikely(dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
++ 				continue;
++ 			}
++ #endif
+  		*seqp = seq;
+  		return dentry;
+  	}
+diff -crB a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
+*** a/fs/notify/fdinfo.c	2025-12-11 18:55:48.295992476 +0000
+--- b/fs/notify/fdinfo.c	2025-12-11 18:51:24.634654112 +0000
+***************
+*** 83,88 ****
+--- 83,119 ----
+  	inode_mark = container_of(mark, struct inotify_inode_mark, fsn_mark);
+  	inode = igrab(mark->inode);
+  	if (inode) {
++ #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
++ 		u32 mask = mark->mask & IN_ALL_EVENTS;
++ 		if (likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC) &&
++ 				unlikely(inode->i_state & INODE_STATE_SUS_KSTAT)) {
++ 			struct path path;
++ 			char *pathname = kmalloc(PAGE_SIZE, GFP_KERNEL);
++ 			char *dpath;
++ 			if (!pathname) {
++ 				goto out_seq_printf;
++ 			}
++ 			dpath = d_path(&file->f_path, pathname, PAGE_SIZE);
++ 			if (!dpath) {
++ 				goto out_free_pathname;
++ 			}
++ 			if (kern_path(dpath, 0, &path)) {
++ 				goto out_free_pathname;
++ 			}
++ 			seq_printf(m, "inotify wd:%x ino:%lx sdev:%x mask:%x ignored_mask:%x ",
++ 			   inode_mark->wd, path.dentry->d_inode->i_ino, path.dentry->d_inode->i_sb->s_dev,
++ 			   mask, mark->ignored_mask);
++ 			show_mark_fhandle(m, path.dentry->d_inode);
++ 			seq_putc(m, '\n');
++ 			iput(inode);
++ 			path_put(&path);
++ 			kfree(pathname);
++ 			return;
++ out_free_pathname:
++ 			kfree(pathname);
++ 		}
++ out_seq_printf:
++ #endif
+  		seq_printf(m, "inotify wd:%x ino:%lx sdev:%x mask:%x ignored_mask:0 ",
+  			   inode_mark->wd, inode->i_ino, inode->i_sb->s_dev,
+  			   inotify_mark_user_mask(mark));
+diff -crB a/fs/proc/cmdline.c b/fs/proc/cmdline.c
+*** a/fs/proc/cmdline.c	2025-12-11 18:56:14.212194208 +0000
+--- b/fs/proc/cmdline.c	2025-12-11 18:53:20.779064793 +0000
+***************
+*** 4,13 ****
+--- 4,23 ----
+  #include <linux/seq_file.h>
+  #include <asm/setup.h>
+  
++ #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
++ extern int susfs_spoof_cmdline_or_bootconfig(struct seq_file *m);
++ #endif
++ 
+  static char new_command_line[COMMAND_LINE_SIZE];
+  
+  static int cmdline_proc_show(struct seq_file *m, void *v)
+  {
++ #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
++ 	if (!susfs_spoof_cmdline_or_bootconfig(m)) {
++ 		seq_putc(m, '\n');
++ 		return 0;
++ 	}
++ #endif
+  	seq_printf(m, "%s\n", new_command_line);
+  	return 0;
+  }
+diff -crB a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+*** a/fs/proc/task_mmu.c	2025-12-11 18:56:23.016265078 +0000
+--- b/fs/proc/task_mmu.c	2025-12-11 18:54:09.163324259 +0000
+***************
+*** 17,22 ****
+--- 17,25 ----
+  #include <linux/shmem_fs.h>
+  #include <linux/mm_inline.h>
+  #include <linux/ctype.h>
++ #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
++ #include <linux/susfs_def.h>
++ #endif
+  
+  #include <asm/elf.h>
+  #include <asm/uaccess.h>
