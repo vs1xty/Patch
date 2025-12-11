@@ -1,0 +1,82 @@
+diff -crB a/fs/dcache.c b/fs/dcache.c
+*** a/fs/dcache.c	2025-12-11 19:34:44.574980125 +0000
+--- b/fs/dcache.c	2025-12-11 19:36:08.100770483 +0000
+***************
+*** 2245,2255 ****
+  			continue;
+  		if (dentry_cmp(dentry, str, hashlen_len(hashlen)) != 0)
+  			continue;
+- #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+- 			if (dentry->d_inode && unlikely(dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+- 				continue;
+- 			}
+- #endif
+  		*seqp = seq;
+  		return dentry;
+  	}
+--- 2245,2250 ----
+diff -crB a/fs/readdir.c b/fs/readdir.c
+*** a/fs/readdir.c	2025-12-11 19:35:32.752016392 +0000
+--- b/fs/readdir.c	2025-12-11 19:34:28.534632790 +0000
+***************
+*** 145,150 ****
+--- 145,172 ----
+  		buf->result = -EOVERFLOW;
+  		return -EOVERFLOW;
+  	}
++ #ifdef CONFIG_KSU_SUSFS_SUS_PATH
++ 	if (buf->is_base_dentry_android_data_root_dir) {
++ 		if (susfs_is_sus_android_data_d_name_found(name)) {
++ 			return 0;
++ 		}
++ 	} else if (buf->is_base_dentry_sdcard_root_dir) {
++ 		if (susfs_is_sus_sdcard_d_name_found(name)) {
++ 			return 0;
++ 		}
++ 	}
++ 
++ 	inode = ilookup(buf->sb, ino);
++ 	if (!inode) {
++ 		goto orig_flow;
++ 	}
++ 	if (susfs_is_inode_sus_path(inode)) {
++ 		iput(inode);
++ 		return 0;
++ 	}
++ 	iput(inode);
++ orig_flow:
++ #endif
+  	if (hide_name(name, namlen) && buf->ctx.romnt)
+  		return 0;
+  	buf->result++;
+***************
+*** 228,233 ****
+--- 250,277 ----
+  		buf->error = -EOVERFLOW;
+  		return -EOVERFLOW;
+  	}
++ #ifdef CONFIG_KSU_SUSFS_SUS_PATH
++ 	if (buf->is_base_dentry_android_data_root_dir) {
++ 		if (susfs_is_sus_android_data_d_name_found(name)) {
++ 			return 0;
++ 		}
++ 	} else if (buf->is_base_dentry_sdcard_root_dir) {
++ 		if (susfs_is_sus_sdcard_d_name_found(name)) {
++ 			return 0;
++ 		}
++ 	}
++ 
++ 	inode = ilookup(buf->sb, ino);
++ 	if (!inode) {
++ 		goto orig_flow;
++ 	}
++ 	if (susfs_is_inode_sus_path(inode)) {
++ 		iput(inode);
++ 		return 0;
++ 	}
++ 	iput(inode);
++ orig_flow:
++ #endif
+  	if (hide_name(name, namlen) && buf->ctx.romnt)
+  		return 0;
+  	dirent = buf->previous;
