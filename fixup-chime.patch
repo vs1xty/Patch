@@ -1,0 +1,39 @@
+diff -urB a/Makefile b/Makefile
+--- a/Makefile	2025-12-19 16:34:48.135157366 +0000
++++ b/Makefile	2025-12-19 16:34:20.770946293 +0000
+@@ -710,28 +710,13 @@
+ endif # $(dot-config)
+ 
+ ifdef CONFIG_LLVM_POLLY
+-ifeq ($(cc-name),clang)
+-KBUILD_CFLAGS   += -mllvm -polly \
+-                    -mllvm -polly-parallel \
+-                    -mllvm -polly-ast-use-context \
+-                    -mllvm -polly-invariant-load-hoisting \
+-                    -mllvm -polly-run-inliner \
+-                    -mllvm -polly-loopfusion-greedy \
+-                    -mllvm -polly-reschedule \
+-                    -mllvm -polly-postopts \
+-                    -mllvm -polly-omp-backend=LLVM \
+-                    -mllvm -polly-scheduling=dynamic \
+-                    -mllvm -polly-scheduling-chunksize=1 \
+-                    -mllvm -polly-vectorizer=stripmine \
+-                    -mllvm -polly-dependences-analysis-type=value-based \
+-                    -mllvm -polly-dependences-computeout=0 \
+-                    -mllvm -polly-enable-delicm \
+-                    -mllvm -polly-num-threads=0 \
+-                    -mllvm -polly-optimizer=isl \
+-                    -mllvm -polly-tiling
+-else
+-KBUILD_CFLAGS	+=
+-endif
++KBUILD_CFLAGS	+= -mllvm -polly \
++		   -mllvm -polly-run-dce \
++		   -mllvm -polly-run-inliner \
++		   -mllvm -polly-ast-use-context \
++		   -mllvm -polly-detect-keep-going \
++		   -mllvm -polly-vectorizer=stripmine \
++		   -mllvm -polly-invariant-load-hoisting
+ endif
+ 
+ # FP Contraction Optimizatiom
