@@ -1,0 +1,49 @@
+diff -crB a/fs/dcache.c b/fs/dcache.c
+*** a/fs/dcache.c	2025-12-19 15:35:02.500005542 +0000
+--- b/fs/dcache.c	2025-12-19 15:35:41.324711742 +0000
+***************
+*** 2216,2226 ****
+  			continue;
+  		if (dentry_cmp(dentry, str, hashlen_len(hashlen)) != 0)
+  			continue;
+- #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+- 			if (dentry->d_inode && unlikely(dentry->d_inode->i_state & INODE_STATE_SUS_PATH) && likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC)) {
+- 				continue;
+- 			}
+- #endif
+  		*seqp = seq;
+  		return dentry;
+  	}
+--- 2216,2221 ----
+diff -crB a/fs/readdir.c b/fs/readdir.c
+*** a/fs/readdir.c	2025-12-19 15:35:02.500005542 +0000
+--- b/fs/readdir.c	2025-12-19 15:37:25.746603273 +0000
+***************
+*** 571,584 ****
+  		container_of(ctx, struct compat_readdir_callback, ctx);
+  	struct compat_old_linux_dirent __user *dirent;
+  	compat_ulong_t d_ino;
+  
+  	if (buf->result)
+  		return -EINVAL;
+- #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+- 	if (likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC) && susfs_sus_ino_for_filldir64(ino)) {
+- 		return 0;
+- 	}
+- #endif
+  	d_ino = ino;
+  	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
+  		buf->result = -EOVERFLOW;
+--- 571,582 ----
+  		container_of(ctx, struct compat_readdir_callback, ctx);
+  	struct compat_old_linux_dirent __user *dirent;
+  	compat_ulong_t d_ino;
++ #ifdef CONFIG_KSU_SUSFS_SUS_PATH
++ 	struct inode *inode;
++ #endif
+  
+  	if (buf->result)
+  		return -EINVAL;
+  	d_ino = ino;
+  	if (sizeof(d_ino) < sizeof(ino) && d_ino != ino) {
+  		buf->result = -EOVERFLOW;
