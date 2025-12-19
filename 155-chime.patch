@@ -15,7 +15,7 @@ diff -urB a/fs/dcache.c b/fs/dcache.c
  	}
 diff -urB a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
 --- a/fs/notify/fdinfo.c	2025-12-19 17:01:21.879382671 +0000
-+++ b/fs/notify/fdinfo.c	2025-12-19 17:05:56.384165587 +0000
++++ b/fs/notify/fdinfo.c	2025-12-19 17:40:53.768095113 +0000
 @@ -108,6 +108,36 @@
  		 * used only internally to the kernel.
  		 */
@@ -36,9 +36,9 @@ diff -urB a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
 +			if (kern_path(dpath, 0, &path)) {
 +				goto out_free_pathname;
 +			}
-+			seq_printf(m, "inotify wd:%x ino:%lx sdev:%x mask:%x ignored_mask:0 ",
++			seq_printf(m, "inotify wd:%x ino:%lx sdev:%x mask:%x ignored_mask:%x ",
 +			   inode_mark->wd, path.dentry->d_inode->i_ino, path.dentry->d_inode->i_sb->s_dev,
-+			   inotify_mark_user_mask(mark));
++			   mask, mark->ignored_mask);
 +			show_mark_fhandle(m, path.dentry->d_inode);
 +			seq_putc(m, '\n');
 +			iput(inode);
